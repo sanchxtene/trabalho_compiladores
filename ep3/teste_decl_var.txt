@@ -1,0 +1,4 @@
+var g_variavel_inteira := decimal,
+var g_variavel_inteira := decimal,
+var g_variavel_inteira := decimal,
+var g_variavel_inteira := decimal;

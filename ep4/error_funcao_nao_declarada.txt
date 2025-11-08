@@ -1,0 +1,11 @@
+
+
+funcaoteste -> decimal :=
+[
+	
+	var y := decimal
+	
+	y := funcaovazia()
+
+	retorna y := decimal	
+],

@@ -1,0 +1,7 @@
+funcvazia -> inteiro a := decimal :=
+[
+],
+
+funcvazia -> inteiro a := decimal :=
+[
+];

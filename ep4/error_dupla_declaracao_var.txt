@@ -1,0 +1,2 @@
+var global := inteiro,
+var global := inteiro;

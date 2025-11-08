@@ -1,0 +1,9 @@
+funcaoteste -> inteiro :=
+[
+	// APENAS PARA TESTE, REMOVER AO ADD FUNCIONALIDADE AOS ARGUMENTOS
+    var x := inteiro
+    
+    x := 9.9
+
+    retorna x := inteiro	
+];

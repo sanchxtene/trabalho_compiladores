@@ -1,0 +1,35 @@
+var g_variavel_inteira := inteiro,
+var g_variavel_inteira := decimal,
+
+fun -> inteiro :=
+[],
+
+
+soma_e_multiplica -> inteiro com a := inteiro, b := inteiro :=
+[
+    var resultado_decimal := decimal
+    var inicializado_inteiro := inteiro
+    var resultado_decimal := decimal com 1.0
+    var inicializado_inteiro := inteiro com 42
+],
+
+func -> decimal :=
+[
+    contador := -contador + (+inicializado_inteiro)
+    contador := 0
+    g_variavel_inteira := 100
+    a := 10 / 4
+    b := 1 & 0 | 1
+    c := 4 <= 10
+    d := 9 >= 10
+    e := 8 == 5
+    f := 8 != 5
+    g := 5 < 7
+    h := 8 > 0
+    i := 10 % 4
+    j := !0
+    k := -2
+    l := +3
+	resultado_decimal := (soma_e_multiplica(contador, contador + 1, contador + 2) * 3) / 2.0
+	resultado_decimal := funcao_constante()
+];

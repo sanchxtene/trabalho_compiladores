@@ -1,0 +1,50 @@
+var global := inteiro,
+
+// definicao de funcao sem com e vazia
+funcvazia -> inteiro a := inteiro :=
+[
+],
+
+// definicao de funcao com com e não vazia
+minhafunc -> inteiro com x := inteiro, y := decimal :=
+[
+    // declaracao var com e sem inicializacao
+    var abc123 := inteiro
+    var ab12 := decimal com 13.4
+
+    // atribuicao
+    abc123 := 19
+
+    // chamada de funcao
+    funcao ()
+    funcao (x + 3, y)
+
+    // if
+    se (x < 3)[
+        x := 10
+    ] senao [
+        x := 0
+    ]
+
+    // while
+    enquanto (x < 9)[
+        x := x + 4
+    ]
+
+    // expressoes
+    z := (funcao_random() + 10) / (2 * 2)
+    a := 10 / 4
+    b := 1 & 0 | 1
+    c := 4 <= 10
+    d := 9 >= 10
+    e := 8 == 5
+    f := 8 != 5
+    g := 5 < 7
+    h := 8 > 0
+    i := 10 % 4
+    j := !0
+    k := -2
+
+    // retorno
+    retorna abc123 := inteiro
+];

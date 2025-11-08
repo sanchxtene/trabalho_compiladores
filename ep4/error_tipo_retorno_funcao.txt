@@ -1,0 +1,5 @@
+funcaointeiro -> decimal :=
+[
+        var a := inteiro com 10
+        retorna a := inteiro
+];
