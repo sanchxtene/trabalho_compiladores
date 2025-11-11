@@ -21,6 +21,7 @@ extern int yylineno;
 	char* texto;
 	valor_lexico_t* valor_lexico;
 	asd_tree_t* no;
+	Argument *argument;
 }
 
 %define parse.error verbose
@@ -44,11 +45,13 @@ extern int yylineno;
 %token <valor_lexico> TK_LI_INTEIRO
 %token <valor_lexico> TK_LI_DECIMAL
 %token <texto> TK_ER
+%type <argument> lista_opcional_parametros
+%type <argument> lista_parametros
+%type <argument> parametro
 
 %type <no> programa lista elemento tipo literal
 %type <no> declaracao_variavel_top declaracao_funcao
-%type <no> cabecalho lista_opcional_parametros
-%type <no> corpo cs_bloco_de_comandos sequencia comando_simples 
+%type <no> cabecalho corpo cs_bloco_de_comandos sequencia comando_simples 
 %type <no> cs_declaracao_variavel cs_comando_atribuicao cs_retorno
 %type <no> cs_controle_fluxo condicional senao_opcional
 %type <no> cs_chamada_funcao argumentos lista_expressoes repeticao
@@ -64,6 +67,7 @@ cria_escopo: %empty { push_scope(); };
 remove_escopo: %empty { pop_scope(); }; 
 remove_escopo_funcao: %empty { free(current_function_name);
 				current_function_name = NULL; 
+				print_scope_stack();
 				pop_scope();
 			     };
 
@@ -108,26 +112,20 @@ declaracao_funcao: cabecalho corpo remove_escopo_funcao
 				asd_add_child($$, $2);
 			 }
 
-			// Debug: Print the parameters being added
-			fprintf(stderr, "Função '%s' declarada com os parâmetros: ", $1->label);
-    
-			// Check and print each parameter associated with the function
-			Argument *arg = $1->args; 
-			while (arg != NULL) {
-				fprintf(stderr, "%s (%d), ", arg->name, arg->type);  // debug
-				arg = arg->next;
-			}
-
-			fprintf(stderr, "\n");
-
-			// Insere os parametros da funcao no escopo
-			if ($1->args != NULL) {
-				Argument *arg = $1->args;
+			// Printa os parametros declarados no escopo da funcao
+			Symbol *sym = lookup_symbol($1->label);
+			Argument *arg = sym->args;
+			if (arg == NULL) {
+				fprintf(stderr, "Função '%s' declarada sem parâmetros", $1->label);
+			} else {
+				fprintf(stderr, "Função '%s' declarada com os parâmetros: ", $1->label);
 				while (arg != NULL) {
-					insert_symbol(arg->name, NATURE_ID, arg->type, NULL);
+					fprintf(stderr, "%s (%d), ", arg->name, arg->type);  // debug
 					arg = arg->next;
 				}
 			}
+
+			fprintf(stderr, "\n");
 		  } ;
 
 
@@ -137,27 +135,33 @@ declaracao_funcao: cabecalho corpo remove_escopo_funcao
 // ------- TESTAR PRA VER SE TA FUNCIONANDO COMO ESPERADO ---------------------------------------------
 cabecalho: TK_ID TK_SETA tipo lista_opcional_parametros TK_ATRIB
 	  { $$ = asd_new($1->valor, $3->type);
-		 insert_symbol($1->valor, NATURE_FUNCAO, $3->type, NULL);
+		 insert_symbol($1->valor, NATURE_FUNCAO, $3->type, $4);
 		 current_function_name = strdup($1->valor);
 		 push_scope();
-				// Adicionar lista de parametros ao escopo interno da funcao	 
+		
+		 // Adiciona a lista de parametros ao escopo interno da funcao	 
+		 Argument *arg = $4;
+		 while (arg) {
+			insert_symbol(arg->name, NATURE_ID, arg->type, NULL);
+			arg = arg->next;
+		 }
 		 free($1->valor);
 		 free($1);
 		 asd_free($3);
 	  };
 
-lista_opcional_parametros: %empty { $$ = NULL; } 
-			 | com_opcional lista_parametros { $$ = NULL; } ;
+lista_opcional_parametros: TK_COM lista_parametros { $$ = $2; } 
+			 | lista_parametros { $$ = $1; } 
+			 | %empty { $$ = NULL; } ;
 
-lista_parametros: parametro  
-		| parametro ',' lista_parametros;
+lista_parametros: parametro  { $$ = $1; }
+		| lista_parametros ',' parametro { $$ = append_argument($1, $3); };
 
-parametro: TK_ID TK_ATRIB tipo { free($1->valor);
+parametro: TK_ID TK_ATRIB tipo { $$ = create_argument($1->valor, $3->type);
+				 free($1->valor);
 				 free($1);
 				 asd_free($3);
 			       } ;
-
-com_opcional: TK_COM | %empty;
 	
 
 // CORPO
@@ -261,34 +265,46 @@ cs_chamada_funcao: TK_ID '(' argumentos ')'
 				exit(ERR_VARIABLE);	
 			  }
 
-			  fprintf(stderr, "Funcao '%s' declarada com os parametros: ", $1->valor);
-
 			  // Verifica o numero de argumentos
 			  Argument *param = sym->args;
 			  size_t param_count = 0;
-			  while (param != NULL) {
-				param_count++;
-				fprintf(stderr, "%s (%d)\n", param->name, param->type);
-				param = param->next;
+			  if (param == NULL) {
+				fprintf(stderr, "Função '%s' declarada sem parâmetros\n", $1->valor);
+			  } else {
+				fprintf(stderr, "Função '%s' declarada com parâmetros:\n", $1->valor);
+				while (param) {
+					fprintf(stderr, "  %s (tipo %s)\n", param->name, type_to_string(param->type));
+					param_count++;
+					param = param->next;
+				}
 			  }
-	
+			  
+			  // Conta argumentos passados
 			  size_t arg_count = 0;
 			  asd_tree_t *args = $3;
-
+			  
 			  while (args != NULL) {
 				arg_count++;
-				args = (args->children != NULL) ? args->children[1] : NULL; 
-			  }
 
+				fprintf(stderr, "   Argumento %zu: tipo %s\n", arg_count, type_to_string(args->type));
+
+				// segue apenas se o filho realmente existe
+				if (args->number_of_children > 0 && args->children != NULL && args->children[0] != NULL) {
+					args = args->children[0];
+				} else {
+					args = NULL;
+				}
+			  }
+			  
 			  fprintf(stderr, "Numero de argumentos passados para a funcao '%s': %zu\n", $1->valor, arg_count);
 
 			  // Verifica se o num de args esta certo
 			  if (arg_count < param_count) {
-				fprintf(stderr, "Erro: número insuficiente de argumentos para a função '%s'\n", $1->valor);
+				fprintf(stderr, "Erro: número insuficiente de argumentos na chamada da função '%s' (linha %d)\n", $1->valor, $1->linha);
 				exit(ERR_MISSING_ARGS);
 			  }
 			  if (arg_count > param_count) {
-				fprintf(stderr, "Erro: número excessivo de argumentos para a função '%s'\n", $1->valor);
+				fprintf(stderr, "Erro: número excessivo de argumentos na chamada da função '%s' (linha %d)\n", $1->valor, $1->linha);
 				exit(ERR_EXCESS_ARGS);
 			  }
 
@@ -296,29 +312,25 @@ cs_chamada_funcao: TK_ID '(' argumentos ')'
 			  args = $3;
 			  param = sym->args;
 			  while (args != NULL && param != NULL) {
-				// Verifica se o argumento é do tipo funcao
-				if (args->children != NULL && args->children[0] != NULL) {
-					if (args->children[0]->type == TYPE_FUNCTION) {
-						// Funcao passada como argumento
-						if (param->type != TYPE_FUNCTION) {
-							fprintf(stderr, "Erro: tipo incompatível para argumento '%s' da função '%s'\n", param->name, $1->valor);
-							exit(ERR_WRONG_TYPE_ARGS);
-						}
-					} else {
-						// Argumento normal (nao funcao)
-						if (args->children[0]->type != param->type){					
-							fprintf(stderr, "Erro: tipo incompatível para argumento '%s' da função '%s'\n", param->name, $1->valor);
-							exit(ERR_WRONG_TYPE_ARGS);
-						}
-					}
-				}
+				asd_tree_t *expr = (args->children ? args->children[0] : args);
+		                if (!expr) break;
+
+		                if (expr->type != param->type) {
+					fprintf(stderr, "Erro: tipo incompatível no argumento '%s' da função '%s' (linha %d)\n"
+						"Esperado: %s, recebido: %s\n",
+						param->name, sym->name, $1->linha,
+						type_to_string(param->type),
+						type_to_string(expr->type));
+					exit(ERR_WRONG_TYPE_ARGS);
+		                }
+
 				// Avanca para o prox argumento
 				if (args->children != NULL) {
-					args = args->children[1]; 
+					args = args->children[0]; 
 				} else {
 					args = NULL; 
 				}
-				param = param->next; // Avanca para o proximo parametro
+				param = param->next; // Avanca para o proóximo parametro
 			  }
 
 			  size_t len = strlen("call ") + strlen($1->valor) + 1;
@@ -333,14 +345,17 @@ cs_chamada_funcao: TK_ID '(' argumentos ')'
 			       free(nome); } ;
 
 
-argumentos: lista_expressoes { $$ = $1; } | %empty { $$ = NULL; } ;
+argumentos: lista_expressoes  { $$ = $1; }
+	  | %empty            { $$ = NULL; };
+
 lista_expressoes: expressao { $$ = $1; }
-		| expressao ',' lista_expressoes { $$ = $1; asd_add_child($$, $3); } ;
+		| expressao ',' lista_expressoes { $$ = $1; 
+						   asd_add_child($1, $3); };
 
 	// Comando de Retorno
 cs_retorno: TK_RETORNA expressao TK_ATRIB tipo
 		{ if ($2->type != $4->type){
-			fprintf(stderr, "Erro: o tipo da expressao de retorno e o tipo do retorno são diferentes\n");
+			fprintf(stderr, "Erro: na função '%s' o tipo da expressao de retorno e o tipo do retorno são diferentes\n", current_function_name);
 			exit(ERR_WRONG_TYPE);
 		  }
 
@@ -391,8 +406,8 @@ repeticao: TK_ENQUANTO '(' expressao ')' cria_escopo cs_bloco_de_comandos remove
 expressao: expr_or { $$ = $1; } ;
 
 expr_or:
-  expr_or '|' expr_and { if ($1->type != TYPE_INTEIRO || $3->type != TYPE_INTEIRO) {
-				fprintf(stderr, "Erro: operador '|' só pode ser aplicado a inteiros\n");
+  expr_or '|' expr_and { if ($1->type != $3->type) {
+				fprintf(stderr, "Erro: incompatibilidade de tipos, na expressao '|'\n");
 				exit(ERR_WRONG_TYPE);
 			 }
 			 $$ = asd_new("|", TYPE_INTEIRO);
@@ -401,8 +416,8 @@ expr_or:
 | expr_and { $$ = $1; } ;
 
 expr_and: 
-  expr_and '&' expr_eq { if ($1->type != TYPE_INTEIRO || $3->type != TYPE_INTEIRO) {
-				fprintf(stderr, "Erro: operador '&' só pode ser aplicado a inteiros\n");
+  expr_and '&' expr_eq { if ($1->type != $3->type) {
+				fprintf(stderr, "Erro: incompatibilidade de tipos, na expressao '&'\n");
 				exit(ERR_WRONG_TYPE);
 			 }
 			 $$ = asd_new("&", TYPE_INTEIRO);
@@ -492,11 +507,11 @@ expr_mul:
 			    $$ = asd_new("/", $1->type);
 				asd_add_child($$, $1); 
 				asd_add_child($$, $3); } 
-| expr_mul '%' expr_unary { if ($1->type != TYPE_INTEIRO || $3->type != TYPE_INTEIRO) {
-				fprintf(stderr, "Erro: operador '%%' só pode ser aplicado a inteiros\n");
+| expr_mul '%' expr_unary { if ($1->type != $3->type) {
+				fprintf(stderr, "Erro: incompatibilidade de tipos, na expressao '%%'\n");
 				exit(ERR_WRONG_TYPE);
 			    }
-			    $$ = asd_new("%", TYPE_INTEIRO);
+			    $$ = asd_new("%", $1->type);
 				asd_add_child($$, $1);
 				asd_add_child($$, $3); } 
 | expr_unary { $$ = $1; } ;
@@ -504,12 +519,7 @@ expr_mul:
 expr_unary: 
   '+' expr_unary { $$ = asd_new("+", $2->type); asd_add_child($$, $2); }
 | '-' expr_unary { $$ = asd_new("-", $2->type); asd_add_child($$, $2); }
-| '!' expr_unary { if ($2->type != TYPE_INTEIRO) {
-			fprintf(stderr, "Erro: operador '!' só pode ser aplicado a inteiros\n");
-			exit(ERR_WRONG_TYPE);
-		   }
-		   $$ = asd_new("!", TYPE_INTEIRO);
-			asd_add_child($$, $2); }
+| '!' expr_unary { $$ = asd_new("!", $2->type); asd_add_child($$, $2); }
 | expr_primary { $$ = $1; };
 
 expr_primary: TK_ID {   Symbol *sym = lookup_symbol($1->valor);
