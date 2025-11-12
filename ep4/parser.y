@@ -11,10 +11,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 int yylex(void);
 void yyerror (char const *mensagem);
 extern int yylineno;
+
+bool is_operator_label(const char *label) {
+    if (label == NULL) return false;
+
+    return (
+        strcmp(label, "+")  == 0 ||
+        strcmp(label, "-")  == 0 ||
+        strcmp(label, "*")  == 0 ||
+        strcmp(label, "/")  == 0 ||
+        strcmp(label, "%")  == 0 ||
+        strcmp(label, "|")  == 0 ||
+        strcmp(label, "&")  == 0 ||
+        strcmp(label, "<")  == 0 ||
+        strcmp(label, ">")  == 0 ||
+        strcmp(label, "<=") == 0 ||
+        strcmp(label, ">=")  == 0 ||
+        strcmp(label, "==")  == 0 ||
+        strcmp(label, "!=")  == 0 ||
+	strcmp(label, "!") == 0
+    );
+}
 %}
 
 %union {
@@ -284,16 +306,17 @@ cs_chamada_funcao: TK_ID '(' argumentos ')'
 			  asd_tree_t *args = $3;
 			  
 			  while (args != NULL) {
-				arg_count++;
-
-				fprintf(stderr, "   Argumento %zu: tipo %s\n", arg_count, type_to_string(args->type));
-
-				// segue apenas se o filho realmente existe
-				if (args->number_of_children > 0 && args->children != NULL && args->children[0] != NULL) {
-					args = args->children[0];
+				if(is_operator_label(args->label)){ 
+					args = args->children[args->number_of_children - 1];
 				} else {
-					args = NULL;
-				}
+					arg_count++;
+					fprintf(stderr, "   Argumento %zu: tipo %s\n", arg_count, type_to_string(args->type));
+					if (args->number_of_children > 0 && args->children != NULL && args->children[args->number_of_children - 1] != NULL) {
+						args = args->children[args->number_of_children - 1];
+					} else {
+						args = NULL;
+					}											
+				}				
 			  }
 			  
 			  fprintf(stderr, "Numero de argumentos passados para a funcao '%s': %zu\n", $1->valor, arg_count);
