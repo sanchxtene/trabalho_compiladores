@@ -73,7 +73,7 @@ bool is_operator_label(const char *label) {
 
 %type <no> programa lista elemento tipo literal
 %type <no> declaracao_variavel_top declaracao_funcao
-%type <no> cabecalho corpo cs_bloco_de_comandos sequencia comando_simples 
+%type <no> cabecalho corpo cs_bloco_de_comandos cs_bloco_de_comando_com_escopo sequencia comando_simples 
 %type <no> cs_declaracao_variavel cs_comando_atribuicao cs_retorno
 %type <no> cs_controle_fluxo condicional senao_opcional
 %type <no> cs_chamada_funcao argumentos lista_expressoes repeticao
@@ -212,9 +212,12 @@ sequencia: %empty { $$ = NULL; }
 comando_simples:  cs_declaracao_variavel { $$ = $1; } 
 		| cs_retorno { $$ = $1; }
 		| cs_chamada_funcao { $$ = $1; }
-		| cs_bloco_de_comandos { $$ = $1; }
+		| cs_bloco_de_comando_com_escopo { $$ = $1; }
 		| cs_controle_fluxo { $$ = $1; }
 		| cs_comando_atribuicao { $$ = $1; };
+
+
+cs_bloco_de_comando_com_escopo: '[' cria_escopo sequencia remove_escopo ']' { $$ = $3; };
 
 	// Declaracao Variavel (COMANDO SIMPLES)
 /* Caso 1: Se não é inicializado, propaga o NULL até o comando de "sequencia"            */
