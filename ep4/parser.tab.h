@@ -97,8 +97,9 @@ union YYSTYPE
 	char* texto;
 	valor_lexico_t* valor_lexico;
 	asd_tree_t* no;
+	Argument *argument;
 
-#line 102 "parser.tab.h"
+#line 103 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

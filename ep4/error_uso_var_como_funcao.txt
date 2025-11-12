@@ -1,8 +1,0 @@
-
-minhafunc -> inteiro :=
-[
-    var abc123 := inteiro
-    
-    abc123()
-
-];

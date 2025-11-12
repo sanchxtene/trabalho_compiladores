@@ -1,6 +1,0 @@
-funcaoteste -> decimal :=
-[
-	// APENAS PARA TESTE, REMOVER AO ADD FUNCIONALIDADE AOS ARGUMENTOS
-    x := 10
-    retorna y := decimal	
-];

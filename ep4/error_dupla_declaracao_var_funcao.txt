@@ -1,5 +1,0 @@
-var funcvazia := inteiro,
-
-funcvazia -> inteiro a := decimal :=
-[
-];

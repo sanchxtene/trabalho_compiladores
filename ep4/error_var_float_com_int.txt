@@ -1,9 +1,0 @@
-funcaoteste -> decimal :=
-[
-	// APENAS PARA TESTE, REMOVER AO ADD FUNCIONALIDADE AOS ARGUMENTOS
-    var x := decimal
-    
-    x := 1
-
-    retorna x := decimal	
-];

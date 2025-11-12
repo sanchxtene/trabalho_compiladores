@@ -6,7 +6,7 @@ CFLAGS=-Wall -g
 SRC=$(wildcard *.c)
 OBJ=$(SRC:.c=.o)
 
-all: analisador
+all: etapa2
 
 parser.c parser.tab.h: parser.y
 	$(YACC) -d -o parser.c parser.y --report-file=parser.output --header=parser.tab.h
@@ -14,10 +14,10 @@ parser.c parser.tab.h: parser.y
 scanner.c: scanner.l
 	$(LEX) -o scanner.c scanner.l
 
-analisador: parser.c scanner.c main.c
+etapa2: parser.c scanner.c main.c
 	$(CC) $(CFLAGS) -o $@ parser.c scanner.c main.c -lfl
 
 clean:
-	rm -f parser.c parser.tab.h parser.output scanner.c analisador *.o
+	rm -f parser.c parser.tab.h parser.output scanner.c etapa2 *.o
 
 
