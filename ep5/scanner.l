@@ -1,0 +1,72 @@
+%{
+        #include "parser.tab.h"
+        #include <string.h>
+        #include <stdlib.h>
+        #include <asd.h>
+%}
+
+%option noyywrap
+%option yylineno
+%option noinput nounput
+/* para nao aparecer warnings no make */
+
+%%
+
+tipo        { return TK_TIPO; }
+var         { return TK_VAR; }
+senao       { return TK_SENAO; }
+decimal     { return TK_DECIMAL; }
+se          { return TK_SE; }
+inteiro     { return TK_INTEIRO; }
+retorna     { return TK_RETORNA; }
+enquanto    { return TK_ENQUANTO; }
+com         { return TK_COM; }
+
+"<="            { return TK_OC_LE; }
+">="            { return TK_OC_GE; }
+"=="            { return TK_OC_EQ; }
+"!="            { return TK_OC_NE; }
+":="            { return TK_ATRIB; }
+"->"            { return TK_SETA; }
+
+
+[!*/%+\-<>\[\]()=,;&|] { return yytext[0]; }
+
+[0-9]+ {
+    valor_lexico_t *v = malloc(sizeof(valor_lexico_t));
+    v->linha = yylineno;
+    v->tipo  = VALOR_TIPO_LITERAL;
+    v->valor = strdup(yytext);
+    yylval.valor_lexico = v;
+    return TK_LI_INTEIRO;
+}
+
+[0-9]*"."[0-9]+ {
+    valor_lexico_t *v = malloc(sizeof(valor_lexico_t));
+    v->linha = yylineno;
+    v->tipo  = VALOR_TIPO_LITERAL;
+    v->valor = strdup(yytext);
+    yylval.valor_lexico = v;
+    return TK_LI_DECIMAL;
+}
+
+[a-z_][a-z0-9_]* {
+    valor_lexico_t *v = malloc(sizeof(valor_lexico_t));
+    v->linha = yylineno;
+    v->tipo  = VALOR_TIPO_IDENTIFICADOR;
+    v->valor = strdup(yytext);
+    yylval.valor_lexico = v;
+    return TK_ID;
+}
+
+[ \t\r\n]+        { /* ignora */ }
+
+"//".*            { /* ignora */ }
+
+. { return TK_ER; }
+
+%%
+
+int get_line_number () {
+        return yylineno;
+}
